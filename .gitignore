@@ -3,6 +3,7 @@
 /classes
 /checkouts
 pom.xml
+nohup.out
 *.jar
 *.class
 .lein-deps-sum

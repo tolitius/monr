@@ -30,8 +30,9 @@
 (defn cancel [m]
   (.cancel (:monitor m) true))
 
-(defn rate [m] 
-  (deref (:latest-rate m)))
+(defn rate [{:keys [id latest-rate]}] 
+  (assoc (deref latest-rate)
+         :id id))
 
 (defn monitor [& {:keys [interval           ;; how often the rate gets published    :default 5 seconds
                          id                 ;; id/name of this rate                 :default (gensym "id:")
@@ -50,5 +51,5 @@
                       (every interval #(do
                                          (update-current)
                                          (publish (assoc (rate) :id id)))))]
-    (merge {:monitor mon} meter)))
+    (merge {:monitor mon :id id} meter)))
 
