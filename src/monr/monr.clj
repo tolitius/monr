@@ -1,5 +1,5 @@
 (ns monr
-  (:use [monr util group]
+  (:use [monr util group report]
         [clojure.tools.logging]))
 
 (defn calc-rate [interval current previous] 
@@ -19,37 +19,34 @@
         latest-count (if update
                        #(reset! current (update)) 
                        #())]
-    {:rate #(update-stats (partial calc-rate interval current previous) stats)
+    {:current-rate #(update-stats (partial calc-rate interval current previous) stats)
      :latest-rate stats
      :inc-count #(swap! current inc)
      :update-current latest-count}))
 
-(defn default-report [{:keys [id rate current]}] 
-  (info (format "%20s rate: %,12d/sec,  total count: %,13d" id (long rate) current)))
-
-(defn cancel [m]
-  (.cancel (:monitor m) true))
-
-(defn rate [{:keys [id latest-rate]}] 
+(defn read-rate [{:keys [id latest-rate]}] 
   (assoc (deref latest-rate)
          :id id))
 
-(defn monitor [& {:keys [interval           ;; how often the rate gets published    :default 5 seconds
-                         id                 ;; id/name of this rate                 :default (gensym "id:")
-                         publish            ;; publisher function                   :default "default-report"
-                         update             ;; function to update the rate          :default nil
-                         group]             ;; whether to add this rate to a group  :default true
-                  :or   {id (gensym "id:")
-                         interval 5                 ;; time unit is seconds (assumed for now)
-                         publish default-report
-                         group true}}]
-  (let [{:keys [rate 
+(defn rate [& {:keys [interval           ;; how often the rate gets published    :default 5 seconds
+                      id                 ;; id/name of this rate                 :default (gensym "id:")
+                      publish            ;; publisher function                   :default "default-report"
+                      update             ;; function to update the rate          :default nil
+                      group]             ;; whether to add this rate to a group  :default true
+               :or   {id (gensym "id:")
+                      interval 5                 ;; time unit is seconds (assumed for now)
+                      publish default-report
+                      group true}}]
+  (let [{:keys [current-rate 
                 update-current] :as meter} (rate-meter interval update)
         mon (if group (every interval #(do
                                          (update-current) 
-                                         (link (assoc (rate) :id id))))
+                                         (link (assoc (current-rate) :id id))))
                       (every interval #(do
                                          (update-current)
-                                         (publish (assoc (rate) :id id)))))]
-    (merge {:monitor mon :id id} meter)))
+                                         (publish (assoc (current-rate) :id id)))))]
+    (merge {:mon mon :id id} meter)))
 
+(defn stop [{:keys [mon fun]}]
+  (if mon (.cancel mon true))
+  (if fun (.cancel fun true)))
