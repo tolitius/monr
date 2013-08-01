@@ -2,11 +2,11 @@
 
 (rate "drinking beer")
 
-## What does monr like?
+### What does monr like?
 
 monr likes to rate things. It's a less of a "five star" kind of rating and more of "ops/sec".
 
-## How do I get one of those?
+### How do I get one of those?
 
 #### leiningen
 ```clojure
@@ -26,11 +26,11 @@ monr likes to rate things. It's a less of a "five star" kind of rating and more 
 
 monr gives options:
 
-      * "monr" does it all: just add that (rate "name") where you need it
-      * "Something" controls the rate: monr takes a "total count" :update function
-      * "You" control the rate: an :inc-count function
+* monr does it all: just add that (rate "name") where you need it
+* Something controls the rate: monr takes a "total count" :update function
+* You control the rate: an :inc-count function
 
-### "monr" does it all: just add that (rate "name") where you need it
+### monr does it all: just add that (rate "name") where you need it
 
 A simple way to get started is to just add a (rate "name") to where you need to monitor the rate.
 Here are the docs for the rate macro:
@@ -53,7 +53,7 @@ Of course none of Clojure libraries would be great if they can't be demoed in RE
 ```clojure
 (use 'monr)
 ```
-You can seriously believe that drinking beer is not as cool as calculating factorials, and not just some factorials but factorials of 42! (or should I say !42):
+You can't seriously believe that drinking beer is not as cool as calculating factorials, and not just some factorials but factorials of 42! (or should I say !42):
 ```clojure
 (defn ! [n] (reduce *' (range 1 (inc n))))
 
@@ -63,17 +63,18 @@ You can seriously believe that drinking beer is not as cool as calculating facto
 So how many of these per second can we do if we do nothing else (well nothing besides counting "how many of these per second we can do"):
 ```clojure
 (dotimes [_ 100000000] (rate "42 factorial") (! 42))
-
+```
+```
 INFO:
 /-------------------------------------------------------------------------\
 |        Name        |           Rate        |            Total           |
 |-------------------------------------------------------------------------|
-|      42 factorial  |       161,394 ops/sec |                  2,410,786 |
+|      42 factorial  |       164,394 ops/sec |                  2,410,786 |
 \-------------------------------------------------------------------------/
 ```
 and monr is going to keep going, so we need to "Ctrl + C" it to move along...
 
-### "Something" controls the rate: monr takes a "total count" :update function
+### Something controls the rate: monr takes a "total count" :update function
 
 While "rate" is a nice little macro, "crate" is a function that "puts that rate in a crate". Here are the docs for "crate":
 
@@ -90,7 +91,7 @@ user=> (doc crate)
 
 We'll talk more about each option that it takes, for now let's look at ":update" which takes a "function to update a total count".
 A "total count" is kept somewhere else (i.e. DB, coming in as TCP/HTTP request, sitting in a text file, etc..), and :update would take
-a function that know how to get that "total count".
+a function that knows how to get that "total count".
 
 Here is how to create a rate monitor using such a function:
 
@@ -103,11 +104,12 @@ where "total-count" is a custom function that is capable of getting that count.
 Here is an example of such a function that is getting a "total count" of nanoseconds since the Unix epoch. Here we're also 
 going to give it an id:
 
-```
+```clojure
 (use 'monr)
 
 (crate :update #(System/nanoTime) :id "nano orchestra")
-
+```
+```
 INFO:
 /-------------------------------------------------------------------------\
 |        Name        |           Rate        |            Total           |
@@ -129,9 +131,9 @@ Since "crate" does not block, if it is executed in the REPL, in order to stop it
 
 Another way to stop it would be to do it by its monitor that gets returned from a call to crate, but we'll discuss it a bit later.
 
-### "You" control the rate: an :inc-count function
+### You control the rate: an :inc-count function
 
-"crate", that we discussed briefly above, also returns things. Here is a map of these things it returns:
+"crate", that we discussed briefly above, also returns things. Here is a map of these things:
 
 ```clojure
 {
@@ -141,7 +143,7 @@ Another way to stop it would be to do it by its monitor that gets returned from 
  :id               ;; an ID of a monitor (i.e. "nano orchestra")
 }
 ```
-Hence if you want to controll the rate yourself, you just need an ":inc-count" function that can be called every time a operation
+Hence if you want to controll the rate yourself, you just need an ":inc-count" function that can be called every time an operation
 is made. The reason it can be handy to do that vs. just a "rate" macro, is that this allows to have a handle to the actual monitor
 and other things such as the latest rate.
 
@@ -155,12 +157,13 @@ Here is an example of calculating that same "factorial 42", but now with using "
     (inc-count) 
     (! 42)
     (recur)))
-
+```
+```
 INFO:
 /-------------------------------------------------------------------------\
 |        Name        |           Rate        |            Total           |
 |-------------------------------------------------------------------------|
-|           id:2179  |       161,584 ops/sec |                  2,174,742 |
+|           id:2179  |       164,584 ops/sec |                  2,174,742 |
 \-------------------------------------------------------------------------/
 ```
 
@@ -172,8 +175,8 @@ monr has a couple of useful perks to share
 
 ### Grouping Rates
 
-In case more than one rate is needed, monr will group them for you in a single report. That is a default behavior. 
-In case a certain rate needs not to be grouped, it can be started with ":group false".
+In case more than one rate is needed, monr will group them for you in a single report. It is a default behavior. 
+In case a certain rate does not need to be grouped, it can be started with ":group false".
 
 Here is an example of grouping two rates together. The gist is: "in order to group them, just start them":
 
@@ -182,7 +185,8 @@ Here is an example of grouping two rates together. The gist is: "in order to gro
 
 (crate :update #(System/nanoTime) :id "nano orchestra")
 (crate :update #(System/currentTimeMillis) :id "millis orchestra")
-
+```
+```
 INFO:
 /-------------------------------------------------------------------------\
 |        Name        |           Rate        |            Total           |
@@ -195,7 +199,7 @@ INFO:
 These can be started in different places at different times, they'll still be grouped together.
 One sample useful stats could look like:
 
-```clojure
+```
 INFO monr.group:
 /-------------------------------------------------------------------------\
 |        Name        |           Rate        |            Total           |
@@ -212,14 +216,14 @@ INFO monr.group:
 While looking at the rates in logs is cool, monr can "consider" a custom publishing function, 
 that could do anything with rates (i.e. send them to Redis, Datomic, Websocket, etc..). Here is how:
 
-```
+```clojure
 (crate :publish publisher)
 ```
 
 where "publisher" is a function that on a specified or default interval will be given a map {:id ... :rate ... :current ...}
 and can do anything with these stats. Here is an example of a custom publisher:
 
-```
+```clojure
 (use 'monr 'clojure.tools.logging)   ;; will use tools.logging to demo it
 
 (defn pub [{:keys [id rate current]}] 
@@ -227,7 +231,8 @@ and can do anything with these stats. Here is an example of a custom publisher:
                 id (long rate) current)))
 
 (crate :update #(System/nanoTime) :id "nano orchestra" :group false :publish pub)
-
+```
+```
 ;; and get these pumping every "interval"
 INFO: [ID: nano orchestra, RATE: 1,000,008,000, TOTAL: 1,375,372,668,926,272,000]
 ```
@@ -265,7 +270,8 @@ However there is a little "bench" macro up monr's sleeve that can be used to qui
 (defn ! [n] (reduce *' (range 1 (inc n))))
 
 (bench (! 42))
-
+```
+```
 INFO:
 /-------------------------------------------------------------------------\
 |        Name        |           Rate        |            Total           |
