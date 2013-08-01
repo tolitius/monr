@@ -1,4 +1,4 @@
-(ns monr.repl
+(ns monr.bench
   (:require [clojure.repl :refer [set-break-handler!]])
   (:use monr
         [monr report]

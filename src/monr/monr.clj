@@ -2,6 +2,9 @@
   (:use [monr util group report]
         [clojure.tools.logging]))
 
+(def ^:private monitors (atom {}))
+(def ^:private muted (atom #{}))
+
 (defn calc-rate [interval current previous] 
   ;; TODO: consider time unit. for now assuming seconds
   (let [rate (double (/ (- @current @previous) interval))]
@@ -21,6 +24,7 @@
                        #())]
     {:current-rate #(update-stats (partial calc-rate interval current previous) stats)
      :latest-rate stats
+     :count current
      :inc-count #(swap! current inc)
      :update-current latest-count}))
 
@@ -45,8 +49,34 @@
                       (every interval #(do
                                          (update-current)
                                          (publish (assoc (current-rate) :id id)))))]
+    (swap! monitors assoc id mon)
     (merge {:mon mon :id id} meter)))
 
+(defn mute [id]
+  (swap! muted conj (keyword id)))
+
 (defn stop [{:keys [mon fun]}]
-  (if mon (.cancel mon true))
-  (if fun (.cancel fun true)))
+  (if mon (future-cancel mon))
+  (if fun (future-cancel fun)))
+
+(defn stop-all []
+  (for [[id mon] @monitors] (do
+    (stop {:mon mon})
+    (stop-pub id))))
+
+(comment
+  """
+    FEATURES:
+
+      1. Return an :inc-count function
+      2. Take a total count update function
+      3. Inline (measure 'name') into code
+      4. Being able to read rates on demand
+      5. Bench a function (in REPL)
+
+    TODO:
+     
+      1. Have a stop all including publish groups and rates created by macros
+      2. Mute publishers (useful if the rates are only read on demand)
+  """)
+
