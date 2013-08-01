@@ -1,4 +1,5 @@
 (ns monr
+  (:require [clojure.repl :refer [set-break-handler!]])
   (:use [monr util group report]
         [clojure.tools.logging]))
 
@@ -24,7 +25,6 @@
                        #())]
     {:current-rate #(update-stats (partial calc-rate interval current previous) stats)
      :latest-rate stats
-     :count current
      :inc-count #(swap! current inc)
      :update-current latest-count}))
 
@@ -32,15 +32,23 @@
   (assoc (deref latest-rate)
          :id id))
 
-(defn rate [& {:keys [interval           ;; how often the rate gets published    :default 5 seconds
-                      id                 ;; id/name of this rate                 :default (gensym "id:")
-                      publish            ;; publisher function                   :default "default-report"
-                      update             ;; function to update the rate          :default nil
-                      group]             ;; whether to add this rate to a group  :default true
-               :or   {id (gensym "id:")
-                      interval 5                 ;; time unit is seconds (assumed for now)
-                      publish default-report
-                      group true}}]
+(defn crate 
+  "creates a rate monitor
+
+     :interval    how often the rate gets published     :default 5 seconds
+     :id          id/name of this rate                  :default (gensym \"id:\")
+     :publish     publisher function                    :default \"default-report\"
+     :update      function to update the rate           :default nil
+     :group       whether to add this rate to a group   :default true"
+  [& {:keys [interval
+                       id
+                       publish
+                       update
+                       group]
+                :or   {id (gensym "id:")
+                       interval 5                 ;; time unit is seconds (assumed for now)
+                       publish default-report
+                       group true}}]
   (let [{:keys [current-rate 
                 update-current] :as meter} (rate-meter interval update)
         mon (if group (every interval #(do
@@ -50,7 +58,7 @@
                                          (update-current)
                                          (publish (assoc (current-rate) :id id)))))]
     (swap! monitors assoc id mon)
-    (merge {:mon mon :id id} meter)))
+    (merge {:mon mon :id id} (dissoc meter :current-rate :update-current))))
 
 (defn mute [id]
   (swap! muted conj (keyword id)))
@@ -63,6 +71,29 @@
   (for [[id mon] @monitors] (do
     (stop {:mon mon})
     (stop-pub id))))
+
+(defn seqs-to-map [seqs]
+  (apply hash-map 
+         (reduce concat seqs)))
+
+(defmacro rate 
+  " creates a rate monitor and gets evaluated to just \"(inc counter)\"
+   where a \"counter\" is a thing that monitor is aware of.
+   hence can be placed anywhere in the code where rate needs to be monitored:
+  
+     (let [bottle (http/get \"http://www.beer.com/bottle\")]
+       (drink bottle)
+       (rate \"drinking beer\"))
+
+   will monitor how fast (how many bottles a second) you can drink"
+  [id & opts]
+  (let [;; params# (seqs-to-map [[:id id :group false :publish pretty-report] opts])
+        mon# (crate :id id :group false :publish pretty-report)
+        rate-on#  (:inc-count mon#)]
+     (set-break-handler! (fn [s#] (stop mon#)))          ;; stop the monitor on "Ctrl + C"
+    `(~(intern *ns* 
+               (symbol (gensym id)) 
+               #(rate-on#)))))
 
 (comment
   """
@@ -78,5 +109,7 @@
      
       1. Have a stop all including publish groups and rates created by macros
       2. Mute publishers (useful if the rates are only read on demand)
+      3. Pass params from rate to crate
+      4. Stop rate's group publisher (using group false for now, to easier the use from REPL)
   """)
 

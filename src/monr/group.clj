@@ -2,9 +2,9 @@
   (:use [monr.util]
         [clojure.tools.logging]))
 
-(def ^:private pubs (atom {}))
+(def ^:private pubs (atom {}))     ;; TODO: embed this into a monitor to avoid a global ref
 
-(defn stop-pub [id]
+(defn stop-pub [id]                ;; TODO: set "publishing" to false for this id
   (if-let [pub (get @pubs id)]
     (future-cancel pub)))
 
