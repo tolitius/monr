@@ -8,12 +8,12 @@
   (if-let [pub (get @pubs id)]
     (future-cancel pub)))
 
-(defn zero-rate? [group]
+(defn has-rate? [group]
   (let [rates (vals (dissoc group :publishing))]
-    (= (reduce + (map :rate rates)) 0.0)))
+    (some #(not= (:rate %) 0.0) rates)))
 
 (defn publish-group [group]
-  (when-not (zero-rate? group)     ;; TODO: make it configurable (e.g. muting zero rates)
+  (when (has-rate? group)          ;; TODO: make it configurable (e.g. muting zero rates)
     (info "
 /-------------------------------------------------------------------------\\
 |        Name        |           Rate        |            Total           |
