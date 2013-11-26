@@ -8,15 +8,20 @@
   (if-let [pub (get @pubs id)]
     (future-cancel pub)))
 
+(defn zero-rate? [group]
+  (let [rates (vals (dissoc group :publishing))]
+    (= (reduce + (map :rate rates)) 0.0)))
+
 (defn publish-group [group]
-  (info "
+  (when-not (zero-rate? group)     ;; TODO: make it configurable (e.g. muting zero rates)
+    (info "
 /-------------------------------------------------------------------------\\
 |        Name        |           Rate        |            Total           |
 |-------------------------------------------------------------------------|"
-    (apply str 
-           (for [[id {:keys [rate current]}] (dissoc group :publishing)]
-             (format "\n| %17s  | %,13d ops/sec | %,26d |" id (long rate) current)))
-"\n\\-------------------------------------------------------------------------/"))
+      (apply str 
+             (for [[id {:keys [rate current]}] (dissoc group :publishing)]
+               (format "\n| %17s  | %,13d ops/sec | %,26d |" id (long rate) current)))
+"\n\\-------------------------------------------------------------------------/")))
 
 (defn add-to-group [group {:keys [id] :as rate}]
   (swap! group assoc id (dissoc rate :id))
