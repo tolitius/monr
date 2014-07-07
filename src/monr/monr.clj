@@ -76,6 +76,17 @@
   (apply hash-map 
          (reduce concat seqs)))
 
+(defn- rate-it
+  [id & opts]
+  (let [;; params# (seqs-to-map [[:id id :group false :publish pretty-report] opts])
+        mon# (crate :id id :group false :publish pretty-report)
+        rate-on#  (:inc-count mon#)]
+    (set-break-handler! (fn [s#] (stop mon#)))          ;; stop the monitor on "Ctrl + C"
+    rate-on#))
+
+(def memo-rate 
+  (memoize rate-it))
+
 (defmacro rate 
   " creates a rate monitor and gets evaluated to just \"(inc counter)\"
    where a \"counter\" is a thing that monitor is aware of.
@@ -86,14 +97,11 @@
        (rate \"drinking beer\"))
 
    will monitor how fast (how many bottles a second) you can drink"
-  [id & opts]
-  (let [;; params# (seqs-to-map [[:id id :group false :publish pretty-report] opts])
-        mon# (crate :id id :group false :publish pretty-report)
-        rate-on#  (:inc-count mon#)]
-     (set-break-handler! (fn [s#] (stop mon#)))          ;; stop the monitor on "Ctrl + C"
-    `(~(intern *ns* 
-               (symbol (gensym id)) 
-               #(rate-on#)))))
+   [id] 
+   `((memo-rate ~id)))
+   ;; `(~(intern *ns* 
+   ;;            (symbol (gensym id)) 
+   ;;            (memo-rate id))))
 
 (comment
   """

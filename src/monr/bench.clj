@@ -20,6 +20,6 @@
 
 (defmacro bench [body]
   `(let [r# (crate :group false 
-                  :publish pretty-report)]
+                   :publish pretty-report)]
      (set-break-handler! (fn [s#] (stop r#)))  ;; stop the monitor on "Ctrl + C" in REPL
      (tight-inc-loop #(~@body) r#)))
