@@ -23,10 +23,10 @@
                (format "\n| %17s  | %,13d ops/sec | %,26d |" id (long rate) current)))
 "\n\\-------------------------------------------------------------------------/")))
 
-(defn add-to-group [group {:keys [id] :as rate}]
+(defn add-to-group [group {:keys [id interval] :as rate}]
   (swap! group assoc id (dissoc rate :id))
   (if-not (:publishing @group)                      ;; TODO: make group publishing rate configurable
-    (let [pub (every 5 #(publish-group @group))]
+    (let [pub (every interval #(publish-group @group))]
       (swap! pubs assoc id pub)
       (swap! group assoc :publishing true))))
     

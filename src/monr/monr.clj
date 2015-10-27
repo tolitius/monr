@@ -41,19 +41,19 @@
      :update      function to update the rate           :default nil
      :group       whether to add this rate to a group   :default true"
   [& {:keys [interval
-                       id
-                       publish
-                       update
-                       group]
-                :or   {id (gensym "id:")
-                       interval 5                 ;; time unit is seconds (assumed for now)
-                       publish default-report
-                       group true}}]
+             id
+             publish
+             update
+             group]
+            :or   {id (gensym "id:")
+                   interval 5                 ;; time unit is seconds (assumed for now)
+                   publish default-report
+                   group true}}]
   (let [{:keys [current-rate 
                 update-current] :as meter} (rate-meter interval update)
         mon (if group (every interval #(do
                                          (update-current) 
-                                         (link (assoc (current-rate) :id id))))
+                                         (link (assoc (current-rate) :id id :interval interval))))
                       (every interval #(do
                                          (update-current)
                                          (publish (assoc (current-rate) :id id)))))]
@@ -78,8 +78,7 @@
 
 (defn- rate-it
   [id & opts]
-  (let [;; params# (seqs-to-map [[:id id :group false :publish pretty-report] opts])
-        mon# (crate :id id :group false :publish pretty-report)
+  (let [mon# (apply crate (concat [:id id] opts))
         rate-on#  (:inc-count mon#)]
     (set-break-handler! (fn [s#] (stop mon#)))          ;; stop the monitor on "Ctrl + C"
     rate-on#))
@@ -97,8 +96,8 @@
        (rate \"drinking beer\"))
 
    will monitor how fast (how many bottles a second) you can drink"
-   [id] 
-   `((memo-rate ~id)))
+   [id & opts]
+   `((memo-rate ~id ~@opts)))
    ;; `(~(intern *ns* 
    ;;            (symbol (gensym id)) 
    ;;            (memo-rate id))))
