@@ -102,6 +102,9 @@
    ;;            (symbol (gensym id)) 
    ;;            (memo-rate id))))
 
+(defmacro inc-count [counter]
+  `((:inc-count ~counter)))
+
 (comment
   """
     FEATURES:
