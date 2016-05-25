@@ -10,7 +10,7 @@ monr likes to rate things. It's a less of a "five star" kind of rating and more 
 
 #### leiningen
 ```clojure
-[monr "0.1.5"]
+[monr "0.1.6"]
 ```
 
 #### maven
@@ -18,7 +18,7 @@ monr likes to rate things. It's a less of a "five star" kind of rating and more 
 <dependency>
   <groupId>monr</groupId>
   <artifactId>monr</artifactId>
-  <version>0.1.5</version>
+  <version>0.1.6</version>
 </dependency>
 ```
 
