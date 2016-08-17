@@ -63,14 +63,14 @@
 (defn mute [id]
   (swap! muted conj (keyword id)))
 
-(defn stop [{:keys [mon fun]}]
-  (if mon (future-cancel mon))
-  (if fun (future-cancel fun)))
+(defn stop [{:keys [id mon]}]
+  (when mon (.shutdownNow mon))
+  (swap! monitors dissoc id)
+  (stop-pub id))
 
 (defn stop-all []
-  (for [[id mon] @monitors] (do
-    (stop {:mon mon})
-    (stop-pub id))))
+  (for [[id mon] @monitors]
+    (stop {:mon mon :id id})))
 
 (defn seqs-to-map [seqs]
   (apply hash-map 

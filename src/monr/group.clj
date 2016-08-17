@@ -2,11 +2,17 @@
   (:use [monr.util]
         [clojure.tools.logging]))
 
-(def ^:private pubs (atom {}))     ;; TODO: embed this into a monitor to avoid a global ref
+;; TODO needs to be refactored to remove all the unmanaged global state
+
+(def ^:private group (atom {}))    ;; TODO: embed this into a monitor to avoid a global ref
 
 (defn stop-pub [id]                ;; TODO: set "publishing" to false for this id
-  (if-let [pub (get @pubs id)]
-    (future-cancel pub)))
+  (when (and (:publishing @group)
+             (= (count @group) 2)       ;; a single id is left 
+             (get @group id))
+    (.shutdownNow (:publishing @group))
+    (reset! group {}))
+  (swap! group dissoc id))
 
 (defn has-rate? [group]
   (let [rates (vals (dissoc group :publishing))]
@@ -27,7 +33,6 @@
   (swap! group assoc id (dissoc rate :id))
   (if-not (:publishing @group)                      ;; TODO: make group publishing rate configurable
     (let [pub (every interval #(publish-group @group))]
-      (swap! pubs assoc id pub)
-      (swap! group assoc :publishing true))))
-    
-(def link (partial add-to-group (atom {})))         ;; TODO: embed in monitor to enable different groups 
+      (swap! group assoc :publishing pub)))) 
+
+(def link (partial add-to-group group))             ;; TODO: embed in monitor to enable different groups 
