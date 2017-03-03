@@ -1,4 +1,4 @@
-(defproject monr "0.1.8-SNAPSHOT"
+(defproject monr "0.1.9-SNAPSHOT"
   :description "\"anything\" rate monitor"
   :url "https://github.com/tolitius/monr"
   :license {:name "Eclipse Public License"

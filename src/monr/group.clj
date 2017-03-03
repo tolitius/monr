@@ -25,7 +25,9 @@
 |        Name        |           Rate        |            Total           |
 |-------------------------------------------------------------------------|"
       (apply str 
-             (for [[id {:keys [rate current]}] (dissoc group :publishing)]
+             (for [[id {:keys [rate current]}] (as-> group $
+                                                     (dissoc $ :publishing)
+                                                     (sort-by first $))]
                (format "\n| %17s  | %,13d ops/sec | %,26d |" id (long rate) current)))
 "\n\\-------------------------------------------------------------------------/")))
 
